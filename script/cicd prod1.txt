@@ -1,0 +1,45 @@
+ pipeline {
+    agent any
+    environment{
+        dockerRun = 'docker run -d -P --name app-${BUILD_NUMBER} arunkeerthi3101/project2:${BUILD_NUMBER}'
+    }
+
+    stages {
+        stage('git checkout') {
+            steps {
+               git 'https://github.com/arunkeerthi/newmavenproject.git'
+            }
+        }
+        stage('mvn build') {
+            steps {
+               sh 'mvn clean package'
+            }
+        } 
+        stage('upload file') {
+            steps {
+               nexusArtifactUploader artifacts: [[artifactId: '01-maven-web-app', classifier: '', file: 'target/01-maven-web-app.war', type: 'war']], credentialsId: 'nexus-3', groupId: 'in.arunit', nexusUrl: '18.217.152.36:8081', nexusVersion: 'nexus3', protocol: 'http', repository: 'kumar-snapshot', version: '3.0-SNAPSHOT'
+            }
+        }  
+        stage('build the image') {
+            steps {
+               sh 'docker build -t arunkeerthi3101/project2:${BUILD_NUMBER} .'
+            }
+        } 
+        stage('Push docker image') {
+            steps {
+                withCredentials([string(credentialsId: 'docker_password_id', variable: 'docker_hub')]) {
+                  sh 'docker login -u arunkeerthi3101 -p ${docker_hub}' 
+}
+                  sh 'docker push arunkeerthi3101/project2:${BUILD_NUMBER}'
+            }
+        } 
+        stage('deploy remote') {
+            steps {
+               sshagent(['dev_remote']) {
+                 sh "ssh -o StrictHostKeyChecking=no ec2-user@172.31.39.83 ${dockerRun}"
+}
+                
+            }
+        } 
+    }
+}

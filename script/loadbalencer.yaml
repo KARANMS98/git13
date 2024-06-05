@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: icicipod
+  labels:
+   name: icicipod
+spec:
+  containers:
+  - name: icicicont
+    image: httpd
+    ports:
+    - containerPort: 80
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: icicisvc
+spec:
+  type: Loadbalancer
+  selector: 
+    name: icicipod
+    ports:
+     - port: 80
+       targetPort: 80
